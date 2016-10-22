@@ -48,13 +48,16 @@ void Controller::ack_received(
              << recv_timestamp_acked << " by receiver's clock)" << endl;
     }
 
-    /* Multiplicative decrease: time to receive ack is bigger than timeout */
-    if (timestamp_ack_received > send_timestamp_acked + timeout_loss_ms_) {
+    uint64_t measured_rtt = timestamp_ack_received - send_timestamp_acked;
+    avg_rtt_ = alpha_ * avg_rtt_ + (1 - alpha_) * measured_rtt;
+
+    /* Multiplicative decrease: average RTT greater than threshold */
+    if (avg_rtt_ >= rtt_thresh_ms_) {
         if (debug_) {
-            cerr << "Timeout: halving window size." << endl;
+            cerr << "RTT above average: halving window size." << endl;
         }
-        window_size_ = max(window_size_ >> 1, (uint64_t) 1);
         acked_in_window_ = 0;
+        window_size_ = max(window_size_ >> 1, (uint64_t) 1);
         return;
     }
 
