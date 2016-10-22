@@ -18,6 +18,15 @@ unsigned int Controller::window_size(void) {
     return window_size_;
 }
 
+int clamp(int n, int min, int max) {
+    if (n < min)
+        return min;
+    else if (n > max)
+        return max;
+    else
+        return n;
+}
+
 /* A datagram was sent */
 void Controller::datagram_was_sent(const uint64_t sequence_number,
                                    /* of the sent datagram */
@@ -47,6 +56,31 @@ void Controller::ack_received(
              << " (send @ time " << send_timestamp_acked << ", received @ time "
              << recv_timestamp_acked << " by receiver's clock)" << endl;
     }
+
+    uint64_t measured_rtt = timestamp_ack_received - send_timestamp_acked;
+    avg_rtt_ = alpha_ * avg_rtt_ + (1 - alpha_) * measured_rtt;
+
+    float P = 0.02;
+    float D = 0.2;
+    float I = 0.000001;
+    int64_t error = rtt_thresh_ms_ - avg_rtt_;
+    float derivative = error - last_error_;
+
+    int64_t delta = error * P + D * derivative + I * integral_;
+
+    last_error_ = error;
+    integral_ += error;
+
+    if (debug_) {
+        cout << "Measured "  << measured_rtt << " Error " << error <<
+            " Weighted error " << error * P << endl;
+        cout << "Derivative "  << derivative << " Weighted derivative " << derivative * D << endl;
+        cout << "Integral "  << integral_ << " Weighted integral " << integral_ * I << endl;
+    }
+
+    // We clamp the delta to prevent window_size_ from diverging
+    window_size_ += clamp(delta, -10, 10);
+    window_size_ = max(window_size_ , (int64_t) 1);
 }
 
 /* How long to wait (in milliseconds) if there are no acks

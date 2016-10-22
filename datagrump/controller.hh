@@ -9,8 +9,14 @@ class Controller
 {
 private:
   bool debug_; /* Enables debugging output */
-  uint64_t window_size_ = 1; /* Window size */
+  int64_t window_size_ = 1; /* Window size */
+  uint64_t acked_in_window_ = 0; /* Number of packets ack'ed in this window */
   uint64_t timeout_loss_ms_ = 1000; /* Timeout */
+  uint64_t avg_rtt_ = 0; /* Average measured RTT */
+  uint64_t alpha_ = 0.9; /* Weighting parameter */
+  uint64_t rtt_thresh_ms_ = 80; /* Threshold delay of 300ms */
+  int64_t last_error_ = 0; /* Used to calculate the D part in the PID */
+  int64_t integral_ = 0;
 
 public:
   /* Public interface for the congestion controller */
