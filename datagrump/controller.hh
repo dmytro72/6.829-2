@@ -9,13 +9,13 @@ class Controller
 {
 private:
   bool debug_; /* Enables debugging output */
-
-  /* Add member variables here */
+  uint64_t window_size_ = 1; /* Window size */
+  uint64_t acked_in_window_ = 0; /* Number of ack'ed packets in this window */
+  uint64_t ssthresh_ = 15; /* Slow start threshold */
+  uint64_t timeout_loss_ms_ = 500;
 
 public:
   /* Public interface for the congestion controller */
-  /* You can change these if you prefer, but will need to change
-     the call site as well (in sender.cc) */
 
   /* Default constructor */
   Controller( const bool debug );
