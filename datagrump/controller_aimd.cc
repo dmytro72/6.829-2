@@ -47,6 +47,37 @@ void Controller::ack_received(
              << " (send @ time " << send_timestamp_acked << ", received @ time "
              << recv_timestamp_acked << " by receiver's clock)" << endl;
     }
+
+    /* Multiplicative decrease: time to receive ack is bigger than timeout */
+    if (timestamp_ack_received > send_timestamp_acked + timeout_loss_ms_) {
+        if (debug_) {
+            cerr << "Timeout: halving window size." << endl;
+        }
+        ssthresh_ = window_size_ >> 1;
+        window_size_ = 1;
+        acked_in_window_ = 0;
+        return;
+    }
+
+    /* Slow start with fixed threshold set to 15 */
+    if (window_size_ < ssthresh_) {
+        if (debug_) {
+            cerr << "Slow start: increasing window size by 1." << endl;
+        }
+        ++window_size_;
+        return;
+    }
+
+    /* Additive increase: increase window size by 1 when received acks for
+     * window_size_ packets */
+    ++acked_in_window_;
+    if (acked_in_window_ >= window_size_) {
+        if (debug_) {
+            cerr << "Additive increase: increasing window size by 1." << endl;
+        }
+        acked_in_window_ = 0;
+        ++window_size_;
+    }
 }
 
 /* How long to wait (in milliseconds) if there are no acks

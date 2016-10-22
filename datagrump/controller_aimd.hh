@@ -10,6 +10,8 @@ class Controller
 private:
   bool debug_; /* Enables debugging output */
   uint64_t window_size_ = 1; /* Window size */
+  uint64_t acked_in_window_ = 0; /* Number of ack'ed packets in this window */
+  uint64_t ssthresh_ = 15; /* Slow start threshold */
   uint64_t timeout_loss_ms_ = 1000; /* Timeout */
 
 public:
