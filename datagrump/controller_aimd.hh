@@ -12,6 +12,7 @@ private:
   uint64_t window_size_ = 1; /* Window size */
   uint64_t acked_in_window_ = 0; /* Number of ack'ed packets in this window */
   uint64_t timeout_loss_ms_ = 1000; /* Timeout */
+  uint64_t last_ack_timestamp_ = 0; /* Timestamp of the last ack'ed datagram */
 
 public:
   /* Public interface for the congestion controller */

@@ -48,11 +48,13 @@ void Controller::ack_received(
              << recv_timestamp_acked << " by receiver's clock)" << endl;
     }
 
-    /* Multiplicative decrease: time to receive ack is bigger than timeout */
-    if (timestamp_ack_received > send_timestamp_acked + timeout_loss_ms_) {
+    /* Multiplicative decrease: time between acks is too big; a packet was
+     * probably dropped, and we timed out in the sender. */
+    if (timestamp_ack_received > last_ack_timestamp_ + timeout_loss_ms_) {
         if (debug_) {
             cerr << "Timeout: halving window size." << endl;
         }
+        last_ack_timestamp_ = timestamp_ack_received;
         window_size_ = max(window_size_ >> 1, (uint64_t) 1);
         acked_in_window_ = 0;
         return;
@@ -65,6 +67,7 @@ void Controller::ack_received(
         if (debug_) {
             cerr << "Additive increase: increasing window size by 1." << endl;
         }
+        last_ack_timestamp_ = timestamp_ack_received;
         acked_in_window_ = 0;
         ++window_size_;
     }
