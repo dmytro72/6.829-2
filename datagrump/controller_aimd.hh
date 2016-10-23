@@ -8,10 +8,13 @@
 class Controller
 {
 private:
+  const uint64_t timeout_loss_ms_ = 1000; /* Timeout */
+  const double add_inc_ = 1.5; /* Additive increase constant */
+  const double mult_dec_ = 1.5; /* Multiplicative decrease constant */
+
   bool debug_; /* Enables debugging output */
-  uint64_t window_size_ = 1; /* Window size */
+  double window_size_ = 1.0; /* Window size */
   uint64_t acked_in_window_ = 0; /* Number of ack'ed packets in this window */
-  uint64_t timeout_loss_ms_ = 1000; /* Timeout */
   uint64_t last_ack_timestamp_ = 0; /* Timestamp of the last ack'ed datagram */
 
 public:
