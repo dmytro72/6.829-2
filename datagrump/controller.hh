@@ -5,41 +5,48 @@
 
 /* Congestion controller interface */
 
-class Controller
-{
-private:
-  bool debug_; /* Enables debugging output */
-  int64_t window_size_ = 1; /* Window size */
-  uint64_t acked_in_window_ = 0; /* Number of packets ack'ed in this window */
-  uint64_t timeout_loss_ms_ = 1000; /* Timeout */
-  uint64_t avg_rtt_ = 0; /* Average measured RTT */
-  uint64_t alpha_ = 0.9; /* Weighting parameter */
-  uint64_t rtt_thresh_ms_ = 80; /* Threshold delay of 300ms */
-  int64_t last_error_ = 0; /* Used to calculate the D part in the PID */
-  int64_t integral_ = 0;
+class Controller {
+   private:
+    const uint64_t tick_duration_ms_ = 30; /* Duration of a tick, in ms */
+    const uint64_t predictable_interval_ms_ =
+        60; /* Duration of an interval in which we can predict the link speed,
+               in ms */
 
-public:
-  /* Public interface for the congestion controller */
+    bool debug_;                   /* Enables debugging output */
+    double window_size_ = 1.0f;    /* Window size */
+    uint64_t acked_in_window_ = 0; /* Number of packets ack'ed in this window */
+    uint64_t timeout_loss_ms_ = 100; /* Timeout */
+    uint64_t avg_rtt_ = 0;           /* Average measured RTT */
+    uint64_t alpha_ = 0.8;           /* Weighting parameter */
+    uint64_t current_tick_ = 0;      /* Start of current tick */
+    uint64_t packets_in_tick_ = 0;   /* Count of packets in current tick */
+    double link_speed_estimate_ = 0; /* Estimate of the link speed */
 
-  /* Default constructor */
-  Controller( const bool debug );
+    void estimate_link_speed(const uint64_t timestamp_ack_received,
+                             const uint64_t delay);
 
-  /* Get current window size, in datagrams */
-  unsigned int window_size( void );
+   public:
+    /* Public interface for the congestion controller */
 
-  /* A datagram was sent */
-  void datagram_was_sent( const uint64_t sequence_number,
-			  const uint64_t send_timestamp );
+    /* Default constructor */
+    Controller(const bool debug);
 
-  /* An ack was received */
-  void ack_received( const uint64_t sequence_number_acked,
-		     const uint64_t send_timestamp_acked,
-		     const uint64_t recv_timestamp_acked,
-		     const uint64_t timestamp_ack_received );
+    /* Get current window size, in datagrams */
+    unsigned int window_size(void);
 
-  /* How long to wait (in milliseconds) if there are no acks
-     before sending one more datagram */
-  unsigned int timeout_ms( void );
+    /* A datagram was sent */
+    void datagram_was_sent(const uint64_t sequence_number,
+                           const uint64_t send_timestamp);
+
+    /* An ack was received */
+    void ack_received(const uint64_t sequence_number_acked,
+                      const uint64_t send_timestamp_acked,
+                      const uint64_t recv_timestamp_acked,
+                      const uint64_t timestamp_ack_received);
+
+    /* How long to wait (in milliseconds) if there are no acks
+       before sending one more datagram */
+    unsigned int timeout_ms(void);
 };
 
 #endif

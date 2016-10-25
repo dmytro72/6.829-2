@@ -11,20 +11,12 @@ Controller::Controller(const bool debug) : debug_(debug) {}
 /* Get current window size, in datagrams */
 unsigned int Controller::window_size(void) {
     if (debug_) {
-        cerr << "At time " << timestamp_ms() << " window size is "
-             << window_size_ << endl;
+        // cerr << "At time " << timestamp_ms() << " window size is "
+        //<< window_size_ << endl;
     }
 
-    return window_size_;
-}
-
-int clamp(int n, int min, int max) {
-    if (n < min)
-        return min;
-    else if (n > max)
-        return max;
-    else
-        return n;
+    window_size_ = link_speed_estimate_ * predicable_interval_ms_;
+    return (uint64_t)window_size_;
 }
 
 /* A datagram was sent */
@@ -39,6 +31,26 @@ void Controller::datagram_was_sent(const uint64_t sequence_number,
     }
 }
 
+void Controller::estimate_link_speed(const uint64_t timestamp_ack_received,
+                                     const uint64_t delay) {
+    // New tick!
+    if (timestamp_ack_received - current_tick_ > tick_duration_ms_) {
+        cerr << "Packets in prev tick: " << packets_in_tick_ << endl;
+        cerr << "Estimate link speed: " << link_speed_estimate_ << endl;
+        double estimate_in_tick =
+            max((double)packets_in_tick_ / tick_duration_ms_, 1.0 / delay);
+        link_speed_estimate_ =
+            alpha_ * link_speed_estimate_ + (1 - alpha_) * estimate_in_tick;
+        cerr << "New estimate link speed: " << link_speed_estimate_ << endl;
+
+        current_tick_ =
+            timestamp_ack_received - timestamp_ack_received % tick_duration_ms_;
+        packets_in_tick_ = 1;
+    } else {
+        ++packets_in_tick_;
+    }
+}
+
 /* An ack was received */
 void Controller::ack_received(
     const uint64_t sequence_number_acked,
@@ -50,37 +62,18 @@ void Controller::ack_received(
     const uint64_t timestamp_ack_received)
 /* when the ack was received (by sender) */
 {
+    (void)sequence_number_acked;
+    (void)send_timestamp_acked;
+    (void)recv_timestamp_acked;
     if (debug_) {
-        cerr << "At time " << timestamp_ack_received
-             << " received ack for datagram " << sequence_number_acked
-             << " (send @ time " << send_timestamp_acked << ", received @ time "
-             << recv_timestamp_acked << " by receiver's clock)" << endl;
+         cerr << "At time " << timestamp_ack_received
+        << " received ack for datagram " << sequence_number_acked
+        << " (send @ time " << send_timestamp_acked << ", received @ time "
+        << recv_timestamp_acked << " by receiver's clock)" << endl;
     }
 
-    uint64_t measured_rtt = timestamp_ack_received - send_timestamp_acked;
-    avg_rtt_ = alpha_ * avg_rtt_ + (1 - alpha_) * measured_rtt;
-
-    float P = 0.02;
-    float D = 0.2;
-    float I = 0.000001;
-    int64_t error = rtt_thresh_ms_ - avg_rtt_;
-    float derivative = error - last_error_;
-
-    int64_t delta = error * P + D * derivative + I * integral_;
-
-    last_error_ = error;
-    integral_ += error;
-
-    if (debug_) {
-        cout << "Measured "  << measured_rtt << " Error " << error <<
-            " Weighted error " << error * P << endl;
-        cout << "Derivative "  << derivative << " Weighted derivative " << derivative * D << endl;
-        cout << "Integral "  << integral_ << " Weighted integral " << integral_ * I << endl;
-    }
-
-    // We clamp the delta to prevent window_size_ from diverging
-    window_size_ += clamp(delta, -10, 10);
-    window_size_ = max(window_size_ , (int64_t) 1);
+    estimate_link_speed(timestamp_ack_received,
+                        (timestamp_ack_received - send_timestamp_acked) / 2);
 }
 
 /* How long to wait (in milliseconds) if there are no acks
