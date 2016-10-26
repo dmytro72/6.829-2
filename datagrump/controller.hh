@@ -2,6 +2,7 @@
 #define CONTROLLER_HH
 
 #include <cstdint>
+#include <deque>
 
 /* Congestion controller interface */
 
@@ -21,6 +22,10 @@ class Controller {
     uint64_t current_tick_ = 0;      /* Start of current tick */
     uint64_t packets_in_tick_ = 0;   /* Count of packets in current tick */
     double link_speed_estimate_ = 0; /* Estimate of the link speed */
+
+    uint64_t history_size_max = 20;
+    std::deque<int64_t> history_{};
+    std::deque<int64_t> delta_history_{};
 
     void estimate_link_speed(const uint64_t timestamp_ack_received,
                              const uint64_t delay);

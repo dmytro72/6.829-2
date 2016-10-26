@@ -2,11 +2,40 @@
 
 #include "controller.hh"
 #include "timestamp.hh"
+#include <math.h>
+#include <algorithm>
 
 using namespace std;
 
 /* Default constructor */
 Controller::Controller(const bool debug) : debug_(debug) {}
+
+
+double mean(const std::deque<int64_t>& hist) {
+    double sum = 0.;
+    for (int64_t elem : hist)
+        sum += elem;
+    return sum / hist.size();
+}
+
+double median(const std::deque<int64_t>& hist) {
+    std::deque<int64_t> x = hist;
+    std::sort(x.begin(), x.end());
+    return x[x.size() / 2];
+}
+
+double variance(const std::deque<int64_t>& hist) {
+    double mu = mean(hist);
+
+    double sum = 0.;
+    for (int64_t elem : hist)
+        sum += (elem - mu) * (elem - mu);
+    return sum / hist.size();
+}
+
+double stdev(const std::deque<int64_t>& hist) {
+    return sqrt(variance(hist));
+}
 
 /* Get current window size, in datagrams */
 unsigned int Controller::window_size(void) {
@@ -14,8 +43,29 @@ unsigned int Controller::window_size(void) {
         // cerr << "At time " << timestamp_ms() << " window size is "
         //<< window_size_ << endl;
     }
+    cout << link_speed_estimate_ << " " << mean(delta_history_) << " " << stdev(delta_history_) << endl;
 
-    window_size_ = link_speed_estimate_ * predicable_interval_ms_;
+    double mu = mean(delta_history_);
+    double s = stdev(delta_history_);
+
+    double aggressiveness;
+    if (mu < 0) {
+        if (s <= 1)
+            aggressiveness = 1;
+        else if (s <= 10)
+            aggressiveness = 0.95;
+        else
+            aggressiveness = 0.9;
+    } else {
+        if (s <= 1)
+            aggressiveness = 0.9;
+        else if (s <= 10)
+            aggressiveness = 0.8;
+        else
+            aggressiveness = 0.7;
+    }
+
+    window_size_ = 65 * link_speed_estimate_  * aggressiveness;
     return (uint64_t)window_size_;
 }
 
@@ -72,8 +122,21 @@ void Controller::ack_received(
         << recv_timestamp_acked << " by receiver's clock)" << endl;
     }
 
-    estimate_link_speed(timestamp_ack_received,
-                        (timestamp_ack_received - send_timestamp_acked) / 2);
+    /* Keep track of the history of RTTs */
+    int64_t rtt = timestamp_ack_received - send_timestamp_acked;
+    if (history_.size() > 0)
+        delta_history_.push_back(rtt - history_.back());
+
+    history_.push_back(rtt);
+
+    /* Keep at most history_size_max in the history */
+    if (history_.size() > history_size_max)
+        history_.pop_front();
+
+    if (delta_history_.size() > history_size_max)
+        delta_history_.pop_front();
+
+    estimate_link_speed(timestamp_ack_received, rtt / 2);
 }
 
 /* How long to wait (in milliseconds) if there are no acks
