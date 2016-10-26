@@ -50,22 +50,17 @@ unsigned int Controller::window_size(void) {
 
     double aggressiveness;
     if (mu < 0) {
-        if (s <= 1)
-            aggressiveness = 1;
-        else if (s <= 10)
-            aggressiveness = 0.95;
-        else
+        aggressiveness = 0.9 + (0.00033 * s * s - 0.0116 * s + 0.08);
+        if (s >= 10)
             aggressiveness = 0.9;
     } else {
-        if (s <= 1)
-            aggressiveness = 0.9;
-        else if (s <= 10)
-            aggressiveness = 0.8;
-        else
+        aggressiveness = 0.7 + (0.00067 * s * s - 0.023 * s + 0.18);
+        if (s >= 10)
             aggressiveness = 0.7;
     }
 
-    window_size_ = 65 * link_speed_estimate_  * aggressiveness;
+    double model = 0.5;
+    window_size_ = model * 65 * link_speed_estimate_  * aggressiveness + (1 - model) * aimd_;
     return (uint64_t)window_size_;
 }
 
@@ -135,6 +130,14 @@ void Controller::ack_received(
 
     if (delta_history_.size() > history_size_max)
         delta_history_.pop_front();
+
+    /* Keep a separate AIMD number */
+    cout << aimd_ << endl;
+    if (rtt > rtt_thresh_ms_)
+        aimd_ /= 1.02;
+    else
+        aimd_ += 3 / aimd_;
+
 
     estimate_link_speed(timestamp_ack_received, rtt / 2);
 }

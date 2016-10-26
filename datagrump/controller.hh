@@ -12,6 +12,7 @@ class Controller {
     const uint64_t predictable_interval_ms_ =
         60; /* Duration of an interval in which we can predict the link speed,
                in ms */
+    const int64_t rtt_thresh_ms_ = 80;
 
     bool debug_;                   /* Enables debugging output */
     double window_size_ = 1.0f;    /* Window size */
@@ -22,6 +23,7 @@ class Controller {
     uint64_t current_tick_ = 0;      /* Start of current tick */
     uint64_t packets_in_tick_ = 0;   /* Count of packets in current tick */
     double link_speed_estimate_ = 0; /* Estimate of the link speed */
+    double aimd_ = 1;
 
     uint64_t history_size_max = 20;
     std::deque<int64_t> history_{};
