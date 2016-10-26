@@ -1,20 +1,18 @@
 #include <iostream>
 
-#include "controller.hh"
-#include "timestamp.hh"
 #include <math.h>
 #include <algorithm>
+#include "controller.hh"
+#include "timestamp.hh"
 
 using namespace std;
 
 /* Default constructor */
 Controller::Controller(const bool debug) : debug_(debug) {}
 
-
 double mean(const std::deque<int64_t>& hist) {
     double sum = 0.;
-    for (int64_t elem : hist)
-        sum += elem;
+    for (int64_t elem : hist) sum += elem;
     return sum / hist.size();
 }
 
@@ -28,14 +26,11 @@ double variance(const std::deque<int64_t>& hist) {
     double mu = mean(hist);
 
     double sum = 0.;
-    for (int64_t elem : hist)
-        sum += (elem - mu) * (elem - mu);
+    for (int64_t elem : hist) sum += (elem - mu) * (elem - mu);
     return sum / hist.size();
 }
 
-double stdev(const std::deque<int64_t>& hist) {
-    return sqrt(variance(hist));
-}
+double stdev(const std::deque<int64_t>& hist) { return sqrt(variance(hist)); }
 
 /* Get current window size, in datagrams */
 unsigned int Controller::window_size(void) {
@@ -43,7 +38,8 @@ unsigned int Controller::window_size(void) {
         // cerr << "At time " << timestamp_ms() << " window size is "
         //<< window_size_ << endl;
     }
-    cout << link_speed_estimate_ << " " << mean(delta_history_) << " " << stdev(delta_history_) << endl;
+    cout << link_speed_estimate_ << " " << mean(delta_history_) << " "
+         << stdev(delta_history_) << endl;
 
     double mu = mean(delta_history_);
     double s = stdev(delta_history_);
@@ -51,16 +47,15 @@ unsigned int Controller::window_size(void) {
     double aggressiveness;
     if (mu < 0) {
         aggressiveness = 0.9 + (0.00033 * s * s - 0.0116 * s + 0.08);
-        if (s >= 10)
-            aggressiveness = 0.9;
+        if (s >= 10) aggressiveness = 0.9;
     } else {
         aggressiveness = 0.7 + (0.00067 * s * s - 0.023 * s + 0.18);
-        if (s >= 10)
-            aggressiveness = 0.7;
+        if (s >= 10) aggressiveness = 0.7;
     }
 
     double model = 0.3;
-    window_size_ = model * 65 * link_speed_estimate_  * aggressiveness + (1 - model) * aimd_;
+    window_size_ = model * 65 * link_speed_estimate_ * aggressiveness +
+                   (1 - model) * aimd_;
     return (uint64_t)window_size_;
 }
 
@@ -111,25 +106,22 @@ void Controller::ack_received(
     (void)send_timestamp_acked;
     (void)recv_timestamp_acked;
     if (debug_) {
-         cerr << "At time " << timestamp_ack_received
-        << " received ack for datagram " << sequence_number_acked
-        << " (send @ time " << send_timestamp_acked << ", received @ time "
-        << recv_timestamp_acked << " by receiver's clock)" << endl;
+        cerr << "At time " << timestamp_ack_received
+             << " received ack for datagram " << sequence_number_acked
+             << " (send @ time " << send_timestamp_acked << ", received @ time "
+             << recv_timestamp_acked << " by receiver's clock)" << endl;
     }
 
     /* Keep track of the history of RTTs */
     int64_t rtt = timestamp_ack_received - send_timestamp_acked;
-    if (history_.size() > 0)
-        delta_history_.push_back(rtt - history_.back());
+    if (history_.size() > 0) delta_history_.push_back(rtt - history_.back());
 
     history_.push_back(rtt);
 
     /* Keep at most history_size_max in the history */
-    if (history_.size() > history_size_max)
-        history_.pop_front();
+    if (history_.size() > history_size_max) history_.pop_front();
 
-    if (delta_history_.size() > history_size_max)
-        delta_history_.pop_front();
+    if (delta_history_.size() > history_size_max) delta_history_.pop_front();
 
     /* Keep a separate AIMD number */
     cout << aimd_ << endl;
@@ -138,8 +130,13 @@ void Controller::ack_received(
     else
         aimd_ += 3 / aimd_;
 
-
     estimate_link_speed(timestamp_ack_received, rtt / 2);
+}
+
+void Controller::timeout_callback() {
+    if (debug_) {
+        cerr << "Timeout occured (no-op)." << endl;
+    }
 }
 
 /* How long to wait (in milliseconds) if there are no acks

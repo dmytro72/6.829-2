@@ -15,7 +15,7 @@ unsigned int Controller::window_size(void) {
              << window_size_ << endl;
     }
 
-    return (unsigned) window_size_;
+    return (unsigned)window_size_;
 }
 
 /* A datagram was sent */
@@ -65,7 +65,7 @@ void Controller::timeout_callback() {
         cerr << "Timeout: halving window size." << endl;
     }
     uint64_t new_window = window_size_ / mult_dec_;
-    window_size_ = max(new_window, (long unsigned) 1);
+    window_size_ = max(new_window, (long unsigned)1);
     acked_in_window_ = 0;
 }
 

@@ -38,6 +38,9 @@ class Controller {
     /* Default constructor */
     Controller(const bool debug);
 
+    /* To be called when a timeout occurs. */
+    void timeout_callback();
+
     /* Get current window size, in datagrams */
     unsigned int window_size(void);
 

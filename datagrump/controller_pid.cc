@@ -72,15 +72,23 @@ void Controller::ack_received(
     integral_ += error;
 
     if (debug_) {
-        cout << "Measured "  << measured_rtt << " Error " << error <<
-            " Weighted error " << error * P << endl;
-        cout << "Derivative "  << derivative << " Weighted derivative " << derivative * D << endl;
-        cout << "Integral "  << integral_ << " Weighted integral " << integral_ * I << endl;
+        cout << "Measured " << measured_rtt << " Error " << error
+             << " Weighted error " << error * P << endl;
+        cout << "Derivative " << derivative << " Weighted derivative "
+             << derivative * D << endl;
+        cout << "Integral " << integral_ << " Weighted integral "
+             << integral_ * I << endl;
     }
 
     // We clamp the delta to prevent window_size_ from diverging
     window_size_ += clamp(delta, -10, 10);
-    window_size_ = max(window_size_ , (int64_t) 1);
+    window_size_ = max(window_size_, (int64_t)1);
+}
+
+void Controller::timeout_callback() {
+    if (debug_) {
+        cerr << "Timeout occured (no-op)." << endl;
+    }
 }
 
 /* How long to wait (in milliseconds) if there are no acks

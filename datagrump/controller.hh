@@ -10,8 +10,7 @@ class Controller {
    private:
     const uint64_t tick_duration_ms_ = 30; /* Duration of a tick, in ms */
     const uint64_t predictable_interval_ms_ =
-        60; /* Duration of an interval in which we can predict the link speed,
-               in ms */
+        60; /* Duration of an interval in which we can predict the link speed */
     const int64_t rtt_thresh_ms_ = 80;
 
     bool debug_;                   /* Enables debugging output */
@@ -40,6 +39,9 @@ class Controller {
 
     /* Get current window size, in datagrams */
     unsigned int window_size(void);
+
+    /* To be called when a timeout occurs. */
+    void timeout_callback();
 
     /* A datagram was sent */
     void datagram_was_sent(const uint64_t sequence_number,
