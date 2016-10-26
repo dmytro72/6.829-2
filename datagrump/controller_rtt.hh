@@ -8,12 +8,13 @@
 class Controller
 {
 private:
-  const uint64_t timeout_loss_ms_ = 1000; /* Timeout */
-  const uint64_t rtt_thresh_ms_ = 100; /* Threshold delay */
-  const uint64_t alpha_ = 0.9; /* Weighting parameter */
+  const uint64_t timeout_loss_ms_ = 100; /* Timeout */
+  const uint64_t rtt_thresh_ms_ = 80; /* Threshold delay */
+  const double add_inc_ = 3.0; /* Additive increase constant */
+  const double mult_dec_ = 1.02; /* Additive increase constant */
 
   bool debug_; /* Enables debugging output */
-  uint64_t window_size_ = 1; /* Window size */
+  double window_size_ = 1.0; /* Window size */
   uint64_t acked_in_window_ = 0; /* Number of packets ack'ed in this window */
 
 public:
@@ -21,6 +22,9 @@ public:
 
   /* Default constructor */
   Controller( const bool debug );
+
+  /* To be called when a timeout occurs. */
+  void timeout_callback();
 
   /* Get current window size, in datagrams */
   unsigned int window_size( void );

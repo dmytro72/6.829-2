@@ -15,7 +15,7 @@ unsigned int Controller::window_size(void) {
              << window_size_ << endl;
     }
 
-    return window_size_;
+    return (unsigned int)window_size_;
 }
 
 /* A datagram was sent */
@@ -51,12 +51,12 @@ void Controller::ack_received(
     uint64_t measured_rtt = timestamp_ack_received - send_timestamp_acked;
 
     /* Multiplicative decrease: average RTT greater than threshold */
-    if (measured_rtt >= rtt_thresh_ms_) {
+    if (measured_rtt > rtt_thresh_ms_) {
         if (debug_) {
-            cerr << "RTT above threshold: halving window size." << endl;
+            cerr << "RTT above threshold: multiplicative decrease." << endl;
         }
         acked_in_window_ = 0;
-        window_size_ = max(window_size_ >> 1, (uint64_t) 1);
+        window_size_ = window_size_ / mult_dec_;
         return;
     }
 
@@ -65,10 +65,17 @@ void Controller::ack_received(
     ++acked_in_window_;
     if (acked_in_window_ >= window_size_) {
         if (debug_) {
-            cerr << "Additive increase: increasing window size by 1." << endl;
+            cerr << "Additive increase: increasing window size by " << add_inc_
+                 << "." << endl;
         }
         acked_in_window_ = 0;
-        ++window_size_;
+        window_size_ += add_inc_;
+    }
+}
+
+void Controller::timeout_callback() {
+    if (debug_) {
+        cerr << "Timeout occured (no-op)." << endl;
     }
 }
 
