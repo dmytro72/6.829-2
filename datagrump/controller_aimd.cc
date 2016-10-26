@@ -48,18 +48,6 @@ void Controller::ack_received(
              << recv_timestamp_acked << " by receiver's clock)" << endl;
     }
 
-    /* Multiplicative decrease: time between acks is too big; a packet was * probably dropped, and we timed out in the sender. */
-    if (timestamp_ack_received > last_ack_timestamp_ + timeout_loss_ms_) {
-        if (debug_) {
-            cerr << "Timeout: halving window size." << endl;
-        }
-        last_ack_timestamp_ = timestamp_ack_received;
-        uint64_t new_window = window_size_ / mult_dec_;
-        window_size_ = max(new_window, (long unsigned) 1);
-        acked_in_window_ = 0;
-        return;
-    }
-
     /* Additive increase: increase window size by 1 when received acks for
      * window_size_ packets */
     ++acked_in_window_;
@@ -67,10 +55,18 @@ void Controller::ack_received(
         if (debug_) {
             cerr << "Additive increase: increasing window size by 1." << endl;
         }
-        last_ack_timestamp_ = timestamp_ack_received;
         acked_in_window_ = 0;
         window_size_ += add_inc_;
     }
+}
+
+void Controller::timeout_callback() {
+    if (debug_) {
+        cerr << "Timeout: halving window size." << endl;
+    }
+    uint64_t new_window = window_size_ / mult_dec_;
+    window_size_ = max(new_window, (long unsigned) 1);
+    acked_in_window_ = 0;
 }
 
 /* How long to wait (in milliseconds) if there are no acks

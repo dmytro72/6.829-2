@@ -8,9 +8,9 @@
 class Controller
 {
 private:
-  const uint64_t timeout_loss_ms_ = 1000; /* Timeout */
-  const double add_inc_ = 1.5; /* Additive increase constant */
-  const double mult_dec_ = 1.5; /* Multiplicative decrease constant */
+  const uint64_t timeout_loss_ms_ = 100; /* Timeout */
+  const double add_inc_ = 1.0; /* Additive increase constant */
+  const double mult_dec_ = 4.0; /* Multiplicative decrease constant */
 
   bool debug_; /* Enables debugging output */
   double window_size_ = 1.0; /* Window size */
@@ -25,6 +25,9 @@ public:
 
   /* Get current window size, in datagrams */
   unsigned int window_size( void );
+
+  /* To be called when a timeout occurs. */
+  void timeout_callback();
 
   /* A datagram was sent */
   void datagram_was_sent( const uint64_t sequence_number,
