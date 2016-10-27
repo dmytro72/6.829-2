@@ -4,6 +4,7 @@ On this directory, we have a few sets of files:
 
 * ``controller.cc, controller.hh``: Files that will be used in compilation.
 * ``controller_mixture.cc, controller_mixture.hh``: Files related to the mixture model approach.
+* ``controller_interval.cc, controller_interval.hh``: Files related to the interval prediction approach.
 * ``controller_pid.cc, controller_pid.hh``: Files related to the pid approach.
 * ``controller_aimd.cc, controller_aimd.hh``: Files related to the TCP-like AIMD approach.
 * ``controller_rtt.cc, controller_rtt.hh``: Files realted to the Delay-based approach.
